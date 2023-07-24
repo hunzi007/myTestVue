@@ -1,0 +1,1268 @@
+
+<template>
+  <div class="dashboard-container">
+    <div class="dashboard-editor-container">
+      <!-- 入库验收单详情-->
+
+      <vxe-toolbar v-if="true">
+        <template #buttons v-if="true">
+          <vxe-button :disabled="deleteIsDisable() " status="danger" @click="deleteAcceptFormMethod">删除</vxe-button>
+          <vxe-button :disabled="formHeadStatus !== 0" status="success" @click="saveAcceptFormHeadMethod('1','0')">保存</vxe-button>
+          <vxe-button :disabled="formHeadStatus !== 0 " status="primary" @click="saveAcceptFormHeadMethod('1','1')">提交</vxe-button>
+          <vxe-button :disabled="approveIsDisable()" status="primary" @click="approveisShow = true">审核</vxe-button>
+          <vxe-button :disabled="formHeadStatus !== 2 && formHeadStatus !== 3 " v-print="'#printStorageformarea'">打印</vxe-button>
+          <vxe-button :disabled="false"  @click="exportToExcel('printStorageformarea1', 'fileName')">输出</vxe-button>
+        </template>
+      </vxe-toolbar>
+      <template>
+<!--        <div>-->
+<!--          <button @click="openModal">详情对比</button>-->
+<!--          <div v-show="isModalOpen" class="modal" ref="modal" :style="{ transform: `translate(${position.x}px, ${position.y}px)`, width: `${size.width}px`, height: `${size.height}px` }">-->
+<!--            <div class="drag-handle" @mousedown="startDrag"></div>-->
+<!--            <div class="modal-content">-->
+<!--              <button class="close-button" @click="closeModal">关闭弹窗</button>-->
+<!--              <div class="content-wrapper" :style="contentWrapperStyle" ref="contentWrapper">-->
+<!--                <div class="content">-->
+<!--                  <component :is="modalContentComponent" :proChangeCode="modalContentData.proChangeCode"></component>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--            <div class="resize-handle" @mousedown="startResize"></div>-->
+<!--          </div>-->
+<!--        </div>-->
+        <div>
+          <vxe-button @click="openModal">完整功能的窗口（移动、拖动、状态保存）</vxe-button>
+          <vxe-modal v-model="isModalOpen" id="myModal6" width="800" height="400" min-width="460" min-height="320"  resize remember storage transfer :lock-view="false" :mask="false">
+          <template v-slot:title>'
+              <span style="color: red;">完整功能的窗口（移动、拖动、状态保存）</span>
+              <span style="color: red;">通过设置 transfer 将弹框容器插入 body</span>
+            </template>
+            <template >
+              <component :is="modalContentComponent" :key="currentComponentKey" :proChangeCode="modalContentData.proChangeCode"></component>
+            </template>
+          </vxe-modal>
+        </div>
+      </template>
+      <div id="printStorageformarea">
+        <div style="text-align: center">
+          <table id="printStorageformarea1"   style="width: 100%;border-collapse:collapse;border:1px solid #000000;table-layout:fixed;word-break:break-all;font-family: 微软雅黑;font-size: 0.8em">
+            <tr style="height: 8vh">
+              <td style="border-left:1px solid #000000;" colspan="2">
+                <img style="width: 90%" src="@/assets/atwicon.png">
+              </td>
+              <td style="font-weight: bold;font-size: 20px" colspan="4">
+                <span>苏州安特威工业智能科技股份有限公司项目结转单催款办评价表</span>
+              </td>
+              <td style="font-weight: bold;font-size: 15px;"  colspan="2">
+                <span>{{proScoreText}}</span>
+              </td>
+            </tr>
+<!--公共客户信息一-->
+            <tr style="height: 4vh">
+              <td style="border:1px solid #000000;font-weight: bold" colspan="1">
+                <span style="float: left;margin-left: 1vw">项目结转单编号: </span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="3" align="left">{{proChangeCode}}</td>
+              <td style="border:1px solid #000000;font-weight: bold" colspan="1">
+                <span style="float: left;margin-left: 1vw">评价表编号:</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="3" align="left">{{pro_change_score_code}} </td>
+            </tr>
+
+            <tr :style="spanclass">
+              <td style="border:1px solid #000000;" colspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">申请人:</span>
+              </td>
+              <td style="border:1px solid #000000;font-size: 0.6em" colspan="3" align="left">{{sqr}}</td>
+
+              <td style="border:1px solid #000000;font-size: 0.6em" colspan="1">原销售负责人:</td>
+              <td style="border:1px solid #000000;font-size: 0.6em" colspan="3" align="left">{{oldxsfzr}}</td>
+            </tr>
+
+            <tr :style="spanclass">
+              <td style="border:1px solid #000000;" colspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">申请部门:</span>
+              </td>
+              <td style="border:1px solid #000000;font-size: 0.6em" colspan="3" align="left">{{ sqbm }}</td>
+
+              <td style="border:1px solid #000000;font-size: 0.6em" colspan="1">原销售部门</td>
+              <td style="border:1px solid #000000;font-size: 0.6em" colspan="3" align="left">{{ oldxsbm}}</td>
+            </tr>
+<!--循环部分-->
+            <tr :style="spanclass">
+              <td style="border:1px solid #000000;" colspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">客户名称:</span>
+              </td>
+              <td style="border:1px solid #000000;font-size: 0.6em" colspan="3" align="left">{{ contract_sup }}</td>
+
+              <td style="border:1px solid #000000;font-size: 0.6em" colspan="1">合同号:</td>
+              <td style="border:1px solid #000000;font-size: 0.6em" colspan="3" align="left">{{ contractCode}}</td>
+            </tr>
+
+
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" rowspan="2">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">序号</span>
+              </td>
+<!--              <td style="border:1px solid #000000;" colspan="3">-->
+<!--                <vxe-input :disabled="true" v-model="formdata.accruecustname" style="width: 80%"></vxe-input>-->
+<!--              </td>-->
+              <td style="border:1px solid #000000;" colspan="1" rowspan="2">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">评价项目</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="2" rowspan="2">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">销售填报</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="2">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2">权重</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="3" rowspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">评分标准</span>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass">
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">合格5分</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">良好7分</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">优秀10分</span>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">(1)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">客户对接人,电话,邮箱(必填)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">{{khdjrdh}}</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="2">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2">10%</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+<!--                <div style="float: left;margin-left: 2vw;font-weight: bold;">验收合格已入库：<span style="font-weight: bold;font-size: 1.8em">□</span></div>-->
+                <vxe-checkbox v-model="score1" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em">一</span>-->
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score1_1" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score1_2" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">(2)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">客户项目负责人及电话(选填)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">待确认数据来源</span>
+              </td>
+              <!-- <td style="border:1px solid #000000;" colspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2" >10%</span>
+              </td> -->
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score2" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score2_1" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score2_2" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">(3)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">客户公司办公地址(必填)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">{{khbgdz}}</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2">10%</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score3" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score3_1" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score3_2" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">(4)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">客户经营情况描述(必填)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">{{khjyqk}}</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2">10%</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score4" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score4_1" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score4_2" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">(5)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">关键人脾气秉性(必填)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">{{gjryg}}</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2">10%</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score5" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score5_1" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score5_2" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+
+            </tr>
+
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" rowspan="5">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">(6)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="3" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="1">欠款原因分析(必填)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="5">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2">10%</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="5">
+                <vxe-checkbox v-model="score6" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="5">
+                <vxe-checkbox v-model="score6_1" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="5">
+                <vxe-checkbox v-model="score6_2" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1"  rowspan="2">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">(1)偿还能力不足()</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">短期(3个月内)能力不足({{qkyyfx1}})</span>
+              </td>
+            </tr>
+            <tr :style="eidtclass" >
+<!--              <td style="border:1px solid #000000;" colspan="2" >-->
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">(1)偿还能力不足()</span>-->
+<!--              </td>-->
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">长期能力不足({{qkyyfx2}})</span>
+              </td>
+<!--              <td style="border:1px solid #000000;" colspan="1">-->
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2">10%</span>-->
+<!--              </td>-->
+<!--              <td style="border:1px solid #000000;" colspan="1" rowspan="1">-->
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em"></span>-->
+<!--              </td>-->
+<!--              <td style="border:1px solid #000000;" colspan="1" rowspan="1">-->
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em"></span>-->
+<!--              </td>-->
+<!--              <td style="border:1px solid #000000;" colspan="1" rowspan="1">-->
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em"></span>-->
+<!--              </td>-->
+
+            </tr>
+
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" rowspan="2">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">(2)偿还意愿不足</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="1">质量问题({{qkyyfx3}})<br/>客诉编号:{{ksbh}}</span>
+              </td>
+<!--              <td style="border:1px solid #000000;" colspan="2" >-->
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2"></span>-->
+<!--              </td>-->
+<!--              <td style="border:1px solid #000000;" colspan="1">-->
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2">10%</span>-->
+<!--              </td>-->
+<!--              <td style="border:1px solid #000000;" colspan="1" rowspan="1">-->
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em"></span>-->
+<!--              </td>-->
+<!--              <td style="border:1px solid #000000;" colspan="1" rowspan="1">-->
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em"></span>-->
+<!--              </td>-->
+<!--              <td style="border:1px solid #000000;" colspan="1" rowspan="1">-->
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em"></span>-->
+<!--              </td>-->
+
+            </tr>
+
+            <tr :style="eidtclass" >
+
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="1">恶意拖欠及老赖({{qkyyfx4}})<br/>()原因描述:{{jtms}}</span>
+              </td>
+<!--              <td style="border:1px solid #000000;" colspan="1">-->
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="1">10%</span>-->
+<!--              </td>-->
+<!--              <td style="border:1px solid #000000;" colspan="1" rowspan="1">-->
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em"></span>-->
+<!--              </td>-->
+<!--              <td style="border:1px solid #000000;" colspan="1" rowspan="1">-->
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em"></span>-->
+<!--              </td>-->
+<!--              <td style="border:1px solid #000000;" colspan="1" rowspan="1">-->
+<!--                <span style="float: left;margin-left: 1vw;font-size: 0.6em"></span>-->
+<!--              </td>-->
+
+            </tr>
+
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">(7)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">合同原件是否已提交商务部</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">{{htyjsftj}}</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2">10%</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score7" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score7_1" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score7_2" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">(8)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">验收单是否已提交商务部</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">{{ysdstatus}}</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2">10%</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score8" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score8_1" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score8_2" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">(9)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">销售发票客户财务是否已入账</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">{{xsfpcaiwu}}</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2">10%</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score9" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score9_1" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score9_2" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">(10)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">询证函/对账单是否已提交财务部</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">{{xzh}}</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2">10%</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score10" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score10_1" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score10_2" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">(11)</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">此客户是否仍有销售负责回款的合同</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">{{fzhkht}}</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2">10%</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score11" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score11_1" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <vxe-checkbox v-model="score11_2" style="float: left;margin-left: 3vw" ></vxe-checkbox>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">催款办评价</span>
+              </td>
+<!--                            <td style="border:1px solid #000000;" colspan="3">-->
+<!--                              <vxe-input :disabled="true" v-model="formdata.accruecustname" style="width: 80%"></vxe-input>-->
+<!--                            </td>-->
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" aria-rowspan="2">综合得分: {{allScore}} 分</span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="2" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2"></span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em" rowspan="2"></span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em"></span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em"></span>
+              </td>
+              <td style="border:1px solid #000000;" colspan="1" rowspan="1">
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em"></span>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">原销售负责人确认:</span>
+              </td>
+              <!--              <td style="border:1px solid #000000;" colspan="3">-->
+              <!--                <vxe-input :disabled="true" v-model="formdata.accruecustname" style="width: 80%"></vxe-input>-->
+              <!--              </td>-->
+              <td style="border:1px solid #000000;" colspan="1" >
+                <vxe-input v-model="oldMan" style="width: 100%;"></vxe-input>
+              </td>
+              <td style="border:1px solid #000000;" colspan="6" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">日期: {{oldManDate}}</span>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">原销售部经理确认:  </span>
+              </td>
+              <!--              <td style="border:1px solid #000000;" colspan="3">-->
+              <!--                <vxe-input :disabled="true" v-model="formdata.accruecustname" style="width: 80%"></vxe-input>-->
+              <!--              </td>-->
+              <td style="border:1px solid #000000;" colspan="1" >
+                <vxe-input v-model="oldManage" style="width: 100%;"></vxe-input>
+              </td>
+              <td style="border:1px solid #000000;" colspan="6" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">日期: {{oldManageDate}}</span>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">原销售总监确认:</span>
+              </td>
+              <!--              <td style="border:1px solid #000000;" colspan="3">-->
+              <!--                <vxe-input :disabled="true" v-model="formdata.accruecustname" style="width: 80%"></vxe-input>-->
+              <!--              </td>-->
+              <td style="border:1px solid #000000;" colspan="1" >
+                <vxe-input v-model="oldCommissioner" style="width: 100%;"></vxe-input>
+              </td>
+              <td style="border:1px solid #000000;" colspan="6" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">日期: {{oldCommissionerDate}}</span>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="1" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">财务(副)总监确认: </span>
+              </td>
+              <!--              <td style="border:1px solid #000000;" colspan="3">-->
+              <!--                <vxe-input :disabled="true" v-model="formdata.accruecustname" style="width: 80%"></vxe-input>-->
+              <!--              </td>-->
+              <td style="border:1px solid #000000;" colspan="1" >
+                <vxe-input v-model="cwCommissioner" style="width: 100%;"></vxe-input>
+              </td>
+              <td style="border:1px solid #000000;" colspan="6" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em " aria-rowspan="2">日期: {{cwCommissionerDate}}</span>
+              </td>
+
+            </tr>
+            <tr :style="eidtclass" >
+              <td style="border:1px solid #000000;" colspan="8" >
+                <span style="float: left;margin-left: 1vw;font-size: 0.6em">备注:综合得分50分是合格,70分是良好,100分是优秀</span>
+              </td>
+            </tr>
+          </table>
+          <!--<div style="position: fixed;bottom: 0;">
+            <div style="display: flex">
+              <div style="flex: 1;text-align: left;font-weight: bold;font-size: 16px">苏州安特威工业智能科技股份有限公司</div>
+              <div style="flex: 1;text-align: right;font-weight: bold;font-size: 16px">助您安心享受美好生活</div>
+            </div>
+          </div>-->
+        </div>
+
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { acceptData, updateAcceptFormHead,downloadPDF,deleteAcceptForm,outputForAcceptPdf  } from '@/api/accept'
+import store from '../../store'
+import {Loading} from "element-ui";
+import XEUtils from 'xe-utils'
+import { getProchangeScore } from '@/api/sale_report'
+import CarryForward from "./Popup.vue";
+import XLSX from 'xlsx'
+// 导入ExcelJS库
+const ExcelJS = require('exceljs');
+// 导入FileSaver.js库
+const { saveAs } = require('file-saver');
+export default {
+  name: 'carryforward_applay_print',
+  created(){
+    this.search();
+  },
+  data: function () {
+    return {
+      // formdata: this.$route.params.formdata,
+      // approveisShow: false,
+      // formHeadStatus: this.$route.params.formHeadStatus,
+       eidtclass: 'display:normal;height: 4vh',
+       spanclass: 'display:normal;height: 4vh',
+      // logindept:store.getters.introduction
+      formHeadStatus: false,
+      // eidtclass: this.$route.params.formHeadStatus ===0 && store.getters.introduction.search('销售')!= -1 ? "display:normal;height: 4vh" : "display:none;height: 4vh",
+      // spanclass: this.$route.params.formHeadStatus !==0 || store.getters.introduction.search('财务')!= -1 ? "display:normal;height: 4vh" : "display:none;height: 4vh",
+      // logindept:store.getters.introduction
+      formdata: [],
+      approveisShow: false,
+      proChangeCode: '',//结转编号
+      pro_change_score_code: '',//结转单编号
+      sqr: '',//申请人
+      sqbm: '',//申请部门
+      oldxsfzr: '',//原负责人
+      oldxsbm: '',//原销售部门
+      contract_sup: '',//客户名称
+      contractCode: '',//合同号
+      khdjrdh:'',//客户对接人
+      khfzrdh:'',//客户项目负责人
+      khbgdz:'',//客户办公地址
+      khjyqk:'',//客户经营情况
+      gjryg:'',//关键人性格
+      qkyyfl:'',//欠款原因分类
+      qkyyfx:'',//欠款原因分析
+      qkyyfx1:'',
+      qkyyfx2:'',
+      qkyyfx3:'',
+      qkyyfx4:'',
+      ksbh:'',//客诉编号
+      jtms:'',//原因
+      htyjsftj:'',//合同原件是否提交商务部
+      ysdstatus:'',//验收单是否提交商务部
+      xsfpcaiwu:'',//销售发票财务是否已入账
+      xzh:'',//询证函是否提交财务
+      fzhkht:'',//此客户是否仍有未会的合同
+      //分数限制
+      score1: false,score1_1: false,score1_2: false,
+      score2: false,score2_1: false,score2_2: false,
+      score3: false,score3_1: false,score3_2: false,
+      score4: false,score4_1: false,score4_2: false,
+      score5: false,score5_1: false,score5_2: false,
+      score6: false,score6_1: false,score6_2: false,
+      score7: false,score7_2: false,score7_1: false,
+      score8: false,score8_1: false,score8_2: false,
+      score9: false,score9_1: false,score9_2: false,
+      score10: false,score10_1: false,score10_2: false,
+      score11: false,score11_1: false,score11_2: false,
+      allScore:0,
+      proScoreStatus:'',//评价表情况
+      proScoreText:'1',
+      oldMan:'1',
+      oldManDate:'1',
+      oldManage:'1',
+      oldManageDate:'1',
+      oldCommissioner:'1',
+      oldCommissionerDate:'1',
+      cwCommissioner:'1',
+      cwCommissionerDate:'1',
+      //弹窗
+      value11:false,
+      isModalOpen: false,
+      isDragging: false,
+      isResizing: false,
+      position: { x: 0, y: 0 },
+      size: { width: 700, height: 300 },
+      initialPos: { x: 0, y: 0 },
+      initialSize: { width: 0, height: 0 },
+      modalContentComponent: null,
+      currentComponentKey:0,
+      modalContentData: { proChangeCode: 'JZ20230613100004' }
+    }
+  },
+  updated() {
+    this.scoreChange()
+    this.proScoreTexts(this.proScoreText)
+    this.sumScore()
+  },
+  methods: {
+    printStorageform() {
+      const divEl = document.getElementById('printStorageformarea')
+      this.$XPrint({
+        sheetName: '打印下面区域',
+        content: divEl.innerHTML
+      })
+    },
+    output() {
+      this.$XModal.confirm('您确定要导出验收选单数据吗？').then(type => {
+        if (type == 'confirm') {
+
+          /*let loadingInstance = Loading.service({  //启动loading服务
+            target: document.getElementById("detailClass"),
+            fullscreen: true,
+          });*/
+
+          let applicationnos = [];
+          applicationnos.push(this.formdata.applicationno)
+
+          var params = {
+            applicationos: applicationnos
+          }
+          // 创建form元素
+          var temp_form = document.createElement("form");
+          // 设置form属性
+          temp_form.action = '/api/accept/downloadAcceptPdf';
+          //temp_form .action = '/api/invoicingApplicationForm/downLoadUploadFormTemplate';
+          temp_form.target = "_self";
+          temp_form.method = "post";
+          temp_form.style.display = "none";
+          // 处理需要传递的参数
+          for (var x in params) {
+            var opt = document.createElement("textarea");
+            opt.name = x;
+            opt.value = params[x];
+            temp_form.appendChild(opt);
+          }
+          document.body.appendChild(temp_form);
+          // 提交表单
+          temp_form.submit();
+          /* temp_form.submit({
+             success : function(form,options) {
+               console.log(123213)
+               loadingInstance.close()  //关闭loading
+             }
+           });*/
+          document.body.removeChild(temp_form);
+
+        }
+      })
+    },
+    deleteAcceptFormMethod() {
+      this.$XModal.confirm('确定要删除当前验收单吗？').then(type => {
+        if (type == 'confirm') {
+          let req = {
+            applicationno: this.formdata.applicationno
+          }
+          deleteAcceptForm(req).then(data => {
+            if (data.code == 20000) {
+              this.$XModal.message({ content: '删除成功！', status: 'success' })
+              this.$refs.xGrid.commitProxy('query')
+              this.storageformisShow = false
+            } else {
+              this.$XModal.message({ content: data.msg, status: 'error' })
+            }
+          })
+        }
+      })
+    },
+    saveAcceptFormHeadMethod(formType, operateType, isApprove) {
+      if (this.formdata.customerphone == '' || this.formdata.customercontact == '' ||
+        this.formdata.salesman == '' || this.formdata.salesphone == '') {
+        this.$XModal.message({ content: '销售联系人/销售联系电话/客户联系人/客户联系电话必填！', status: 'warning' })
+        return
+      }
+
+      if (isApprove == '0' && this.formdata.rejectreason == null) {
+        this.$XModal.message({ content: '审核拒绝请填写理由！', status: 'warning' })
+        return
+      }
+      let req = {}
+      if (formType == '1') {
+        req = {
+          id: this.formdata.id,
+          acceptanceaddress: this.formdata.acceptanceaddress,
+          customercontact: this.formdata.customercontact,
+          customerphone: this.formdata.customerphone,
+          salesman: this.formdata.salesman,
+          salesphone: this.formdata.salesphone,
+          operateType: operateType,
+          isApprove: isApprove,
+          rejectreason: this.formdata.rejectreason,
+          name: store.getters.name,
+          rows: this.formdata.rows
+        }
+      }
+      this.$XModal.confirm('确定要执行此操作吗？').then(type => {
+        if (type == 'confirm') {
+          updateAcceptFormHead(req).then(data => {
+            if (data.code == 20000) {
+              this.$XModal.message({ content: '保存成功', status: 'success' })
+              this.formHeadStatus = data.status
+              if (operateType == '2') {
+                this.approveisShow = false;
+              }
+            } else {
+              this.$XModal.message({ content: data.msg, status: 'error' })
+            }
+          })
+        }
+      })
+    },
+    approveIsDisable() {
+      if (this.formHeadStatus !== 1) {
+        return true
+      }
+      var isLeader = false
+      /* if(store.getters.roles.search("A") != -1){
+         isLeader = true
+       }*/
+      console.log(store.getters.sysRole.roleClass)
+      console.log(store.getters)
+      /* store.getters.roles.forEach((v, i) => {
+         if(v.indexOf("A")!= -1){
+           isLeader = true
+         }
+       })*/
+      if (store.getters.sysRole.roleClass == undefined) {
+        isLeader = true
+      } else {
+        if (store.getters.sysRole.roleClass.indexOf("A") != -1) {
+          isLeader = true
+        }
+      }
+
+      /* var isLeader = false
+       store.getters.minions.forEach(item => {
+         if(item.truename == this.formdata.salesman){
+           isLeader = true
+         }
+       })*/
+      if (isLeader) {
+        return false
+      } else {
+        return true
+      }
+    },
+    deleteIsDisable() {
+      if (this.formHeadStatus == '0') {
+        return false
+      }
+      return true
+    },
+    search() {
+      let req = {
+        time: XEUtils.toDateString(this.inputTime, 'yyyy-MM-dd'),
+        proChangeCode: this.$route.query.proChangeCode == null ? this.proChangeCode : this.$route.query.proChangeCode,
+      }
+      let scorse = []
+      getProchangeScore(req).then(data => {
+        this.formdata = data['data'],
+          this.proChangeCode = "JZ20230620100014",
+          this.pro_change_score_code = 'PJ20230620100014',
+          this.sqr = '二狗子',
+          this.sqbm = '未知',
+          this.oldxsfzr = '二郎神',
+          this.oldxsbm = '灌江口',
+          this.contract_sup = '灌江口督察局',
+          this.contractCode = 'ATW-GGT765990',
+          //签字确认和日期
+          this.oldMan = '秦始皇', this.oldManDate = '908-10-01',
+          this.oldManage = '刘邦', this.oldManageDate = '1129-02-01',
+          this.oldCommissioner = '曹操', this.oldCommissionerDate = '1589-08-06',
+          this.cwCommissioner = '赵匡胤', this.cwCommissionerDate = '1768-10-16',
+          this.khdjrdh = this.formdata[0].khlxr,//客户对接人
+          this.khfzrdh = '未知',//客户项目负责人
+          this.khbgdz = this.formdata[0].khbgdz,//客户办公地址
+          this.khjyqk = this.formdata[0].khjyqk,//客户经营情况
+          this.gjryg = this.formdata[0].khlxrxg,//关键人性格
+          this.qkyyfl = this.formdata[0].qkgyfx,//欠款原因分类
+          this.qkyyfx = this.formdata[0].qkgyfx,//欠款原因分析
+          this.htyjsftj = this.formdata[0].htyjstatus,//合同原件是否提交商务部
+          this.ysdstatus = this.formdata[0].sfyqysd,//验收单是否提交商务部
+          this.xsfpcaiwu = this.formdata[0].xsfpstatus,//销售发票财务是否已入账
+          this.xzh = this.formdata[0].dzdstatus,//询证函是否提交财务
+          this.fzhkht = this.formdata[0].ysdstatus,//此客户是否仍有未会的合同
+
+          scorse.push({ key: 'score1', value: this.formdata[0].scoreOne }), scorse.push({
+          key: 'score2',
+          value: this.formdata[0].scoreTow
+        }),
+          scorse.push({ key: 'score3', value: this.formdata[0].scoreThree }), scorse.push({
+          key: 'score4',
+          value: this.formdata[0].scoreFour
+        }),
+          scorse.push({ key: 'score5', value: this.formdata[0].scoreFive }), scorse.push({
+          key: 'score6',
+          value: this.formdata[0].scoreSix
+        }),
+          scorse.push({ key: 'score7', value: this.formdata[0].scoreSeven }), scorse.push({
+          key: 'score9',
+          value: this.formdata[0].scoreNight
+        }),
+          scorse.push({ key: 'score8', value: this.formdata[0].scoreEight }), scorse.push({
+          key: 'score10',
+          value: this.formdata[0].scoreTen
+        }),
+          scorse.push({ key: 'score11', value: this.formdata[0].scoreThree }), scorse.push({
+          key: 'score12',
+          value: this.formdata[0].scoreThree
+        }),//表中暂时缺12
+          scorse.forEach(item => {
+            if (item.value != undefined && item.value != null && item.value == 5) {
+              this[item.key] = true,
+                this[item.key + '_1'] = false,
+                this[item.key + '_2'] = false
+            }
+            if (item.value != undefined && item.value != null && item.value == 7) {
+              this[item.key] = false,
+                this[item.key + '_1'] = true,
+                this[item.key + '_2'] = false
+            }
+            if (item.value != undefined && item.value != null && item.value == 10) {
+              this[item.key] = false,
+                this[item.key + '_1'] = false,
+                this[item.key + '_2'] = true
+            }
+            console.log(item.key, item.value);
+          });
+        this.indexQkyyfl();
+        //依据评价单状态指定数据修改
+        //   this.score1=false,this.score1_1=true,this.score1_2=false,
+        //   this.score2=false,this.score2_1=false,this.score2_2=true,
+        //   this.score3=true,this.score3_1=false,this.score3_2=false,
+        //   this.score4=false,this.score4_1=true,this.score4_2=false,
+        //   this.score5=false,this.score5_1=true,this.score5_2=false,
+        //   this.score6=false,this.score6_1=false,this.score6_2=true,
+        //   this.score7=false,this.score7_1=false,this.score7_2=true,
+        //   this.score8=false,this.score8_1=true,this.score8_2=false,
+        //   this.score9=false,this.score9_1=false,this.score9_2=true,
+        //   this.score10=true,this.score10_1=false,this.score10_2=false,
+        //   this.score11=false,this.score11_1=true,this.score11_2=false,
+
+      }).catch(error => {
+      })
+    },
+    //打分按钮
+    scoreChange() {
+      for (var i = 1; i <= 11; i++) {
+        var text1 = 'score' + i;
+        var text2 = 'score' + i + '_1';
+        var text3 = 'score' + i + '_2';
+        if (this[text1]) {
+          this[text2] = false
+          this[text3] = false
+        }
+        if (this[text2]) {
+          this[text1] = false
+          this[text3] = false
+        }
+        if (this[text3]) {
+          this[text2] = false
+          this[text1] = false
+        }
+      }
+
+    },
+    //状态展示
+    proScoreTexts(status) {
+      if (status == 1) {
+        this.proScoreText = '李白已退回'
+      }
+    },
+    //操作人员
+    sumbitOb() {
+      var olderMan = this.oldMan
+      window.alert("确认人员:" + olderMan)
+    },
+    //统计得分
+    sumScore() {
+      var allScores = 0;
+      for (var i = 1; i <= 11; i++) {
+        var text1 = 'score' + i;
+        var text2 = 'score' + i + '_1';
+        var text3 = 'score' + i + '_2';
+        if (this[text1]) {
+          allScores = 5 * (0.1) + allScores;
+        }
+        if (this[text2]) {
+          allScores = 7 * (0.1) + allScores;
+        }
+        if (this[text3]) {
+          allScores = 10 * (0.1) + allScores;
+        }
+      }
+      this.allScore = Math.round(allScores * 100) / 100;
+    },
+
+    //弹窗
+    openModal() {
+      this.isModalOpen = true;
+      this.currentComponentKey++
+      this.modalContentComponent = CarryForward;
+
+    },
+    closeModal() {
+      this.isModalOpen = false;
+      this.modalContentComponent = null;
+    },
+    startDrag(event) {
+      this.isDragging = true;
+      this.initialPos.x = event.clientX - this.position.x;
+      this.initialPos.y = event.clientY - this.position.y;
+      window.addEventListener('mousemove', this.handleDrag);
+      window.addEventListener('mouseup', this.stopDrag);
+    },
+    handleDrag(event) {
+      if (!this.isDragging) return;
+      this.position.x = event.clientX - this.initialPos.x;
+      this.position.y = event.clientY - this.initialPos.y;
+    },
+    stopDrag() {
+      this.isDragging = false;
+      window.removeEventListener('mousemove', this.handleDrag);
+      window.removeEventListener('mouseup', this.stopDrag);
+    },
+    startResize(event) {
+      this.isResizing = true;
+      this.initialSize.width = this.size.width;
+      this.initialSize.height = this.size.height;
+      this.initialPos.x = event.clientX;
+      this.initialPos.y = event.clientY;
+      window.addEventListener('mousemove', this.handleResize);
+      window.addEventListener('mouseup', this.stopResize);
+    },
+    handleResize(event) {
+      if (!this.isResizing) return;
+      const offsetX = event.clientX - this.initialPos.x;
+      const offsetY = event.clientY - this.initialPos.y;
+      this.size.width = Math.max(this.initialSize.width + offsetX, 0);
+      this.size.height = Math.max(this.initialSize.height + offsetY, 0);
+    },
+    stopResize() {
+      this.isResizing = false;
+      window.removeEventListener('mousemove', this.handleResize);
+      window.removeEventListener('mouseup', this.stopResize);
+    },
+    //对欠款原因分析进行讨论
+    indexQkyyfl() {
+      var str = this.qkyyfx != undefined ? this.qkyyfx.replace(/^\(|\)$/g, '') : "";
+      var contracts = str.split('/');
+      let result = [];
+      alert("妖孽")
+
+      for (var i = 0; i < contracts.length; i++) {
+        if (contracts[i].includes('短期(3个月内)能力不足')) {
+          var contract = contracts[i];
+          var index = contract.indexOf(':'); // 找到冒号的索引
+          var contractNo = contract.substring(0, index); // 提取冒号前的合同号
+          this.qkyyfx1 = this.qkyyfx1 + ',' + contractNo
+        }
+        if (contracts[i].includes('长期能力不足')) {
+          var contract = contracts[i];
+          var index = contract.indexOf(':'); // 找到冒号的索引
+          var contractNo = contract.substring(0, index); // 提取冒号前的合同号
+          this.qkyyfx2 = this.qkyyfx2 + ',' + contractNo
+        }
+        if (contracts[i].includes('质量问题')) {
+          alert("法海法海")
+          var contract = contracts[i];
+          var index = contract.indexOf(':'); // 找到冒号的索引
+          var contractNo = contract.substring(0, index); // 提取冒号前的合同号
+          this.qkyyfx3 = this.qkyyfx3 + ',' + contractNo
+          this.ksbh = this.formdata[0].ksbh//客诉编号
+        }
+        if (contracts[i].includes('恶意拖欠及老赖')) {
+          var contract = contracts[i];
+          var index = contract.indexOf(':'); // 找到冒号的索引
+          var contractNo = contract.substring(0, index); // 提取冒号前的合同号
+          this.qkyyfx4 = this.qkyyfx4 + ',' + contractNo
+          this.jtms = this.formdata[0].jtms//描述
+        }
+      }
+    },
+    exportToExcel(contentId, fileName) {
+      var table = document.getElementById(contentId); // 替换为您的表格的ID
+      // 获取表格数据
+      var tableData = [];
+      var rows = table.getElementsByTagName('tr');
+      for (var i = 0; i < rows.length; i++) {
+        var rowData = [];
+        var cells = rows[i].getElementsByTagName('td');
+        for (var j = 0; j < cells.length; j++) {
+          var cellData = cells[j].innerText.replace(/(\r\n|\n|\r)/gm, '');
+          rowData.push(cellData);
+        }
+        tableData.push(rowData);
+      }
+
+      // 创建Workbook对象
+      var wb = XLSX.utils.book_new();
+
+      // 创建Worksheet对象
+      var ws = XLSX.utils.aoa_to_sheet(tableData);
+
+      // 设置边框样式
+      var range = XLSX.utils.decode_range(ws['!ref']);
+      for (var rowNum = range.s.r; rowNum <= range.e.r; rowNum++) {
+        for (var colNum = range.s.c; colNum <= range.e.c; colNum++) {
+          var cellAddress = XLSX.utils.encode_cell({ r: rowNum, c: colNum });
+          var cell = ws[cellAddress] || {};
+
+          cell.s = {
+            border: {
+              top: { style: 'thin', color: { rgb: '00000000' } },
+              bottom: { style: 'thin', color: { rgb: '00000000' } },
+              left: { style: 'thin', color: { rgb: '00000000' } },
+              right: { style: 'thin', color: { rgb: '00000000' } }
+            }
+          };
+        }
+      }
+
+      // 将Worksheet对象添加到Workbook中
+      XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+
+      // 导出Excel文件
+      var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array', bookSST: true });
+
+      // 创建Blob对象
+      var blob = new Blob([wbout], { type: 'application/octet-stream' });
+
+      // 创建下载链接并模拟点击
+      var url = window.URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'table.xlsx';
+      a.click();
+    }
+  },
+  computed: {
+    contentWrapperStyle() {
+      return {
+        width: `${this.size.width}px`,
+        height: `${this.size.height}px`
+      };
+    }
+  }
+
+}
+
+</script>
+<style lang="scss" scoped>
+.dashboard-editor-container {
+  padding: 32px;
+  background-color: rgb(240, 242, 245);
+  position: relative;
+
+  .github-corner {
+    position: absolute;
+    top: 0px;
+    border: 0;
+    right: 0;
+  }
+
+  .chart-wrapper {
+    background: #fff;
+    padding: 16px 16px 0;
+    margin-bottom: 32px;
+  }
+}
+
+@media (max-width:1024px) {
+  .chart-wrapper {
+    padding: 8px;
+  }
+}
+.isHidden{
+  display: none;
+}
+
+.popup-container {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  width: 400px;
+  height: 200px;
+  background-color: #fff;
+}
+
+.popup {
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  overflow: auto;
+}
+#modalContainer {
+  position: fixed;
+  top: 40%;
+  left: 40%;
+ height: 50%;
+  width: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  z-index: 9999;
+  /* 设置其他弹窗样式 */
+}
+//.modal {
+//  //position: absolute;
+//  //top: 0;
+//  //left: 0;
+//  ////background-color: transparent;
+//  //z-index: 9999;
+//  position: fixed;
+//  top: 40%;
+//  left: 40%;
+//  height: 50%;
+//  width: 50%;
+//  transform: translate(-50%, -50%);
+//  background-color: white;
+//  z-index: 9999;
+//}
+.modal {
+  position: fixed;
+  top: 40%;
+  left: 40%;
+  height: 50%;
+  width: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  z-index: 9999;
+}
+
+.modal-content {
+  //display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: calc(100% - 30px); /* 减去拖动手柄的高度 */
+  width: 100%;
+  //position: relative; /* 在modal-content中添加position: relative */
+  //z-index: 1; /* 设置更高的z-index以将其放在前面 */
+}
+
+.close-button {
+  margin-top: auto;
+  position: absolute; /* 在modal-content中添加position: absolute，以在其中定位 */
+  top: 10px;
+  right: 10px;
+  z-index: 2; /* 设置更高的z-index以将其放在modal-content前面 */
+}
+
+.drag-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 20px;
+  cursor: move;
+  background-color: gray;
+  z-index: 2; /* 设置更高的z-index以将其放在前面 */
+}
+
+.resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  cursor: nwse-resize;
+  background-color: gray;
+  z-index: 2; /* 设置更高的z-index以将其放在前面 */
+}
+.content-wrapper {
+  /* 添加您希望的样式属性 */
+  background-color: #ffffff;
+  border: 1px solid #eaeaea;
+  padding: 10px;
+  margin: 0;
+  /* ... */
+}
+.content {
+  max-height: 100%;
+  overflow-y: auto;
+}
+</style>
